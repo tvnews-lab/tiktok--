@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KBC TikTok 概要欄自動生成</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: rgba(240, 246, 252, 0.1);
+      --accent: #fe2c55;
+      --accent2: #69c9d0;
+      --yt: #ff0000;
+      --text: #c9d1d9;
+      --white: #ffffff;
+      --muted: #8b949e;
+      --success: #238636;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding-bottom: 80px;
+    }
+
+    header {
+      background: rgba(13, 17, 23, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: white;
+    }
+
+    h1 {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--white);
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--white);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Video Card */
+    .video-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 24px;
+      transition: 0.2s;
+    }
+
+    .video-card:hover {
+      border-color: rgba(254, 44, 85, 0.4);
+    }
+
+    .thumb-area {
+      width: 220px;
+      flex-shrink: 0;
+    }
+
+    .thumb-area img {
+      width: 100%;
+      border-radius: 8px;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .content-area {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .v-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .tags-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tag-badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: rgba(110, 118, 129, 0.2);
+      border: 1px solid rgba(110, 118, 129, 0.4);
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .tag-badge.region {
+      background: rgba(105, 201, 208, 0.15);
+      border-color: rgba(105, 201, 208, 0.5);
+      color: var(--accent2);
+    }
+
+    .tag-badge.city {
+      background: rgba(254, 44, 85, 0.15);
+      border-color: rgba(254, 44, 85, 0.5);
+      color: var(--accent);
+    }
+
+    .tag-badge.custom {
+      background: rgba(251, 191, 36, 0.15);
+      border-color: rgba(251, 191, 36, 0.5);
+      color: #fbbf24;
+    }
+
+    .tag-badge.locked {
+      background: var(--white);
+      color: var(--bg);
+      font-weight: 900;
+      border: none;
+    }
+
+    .output-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 14px;
+    }
+
+    .output-text {
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-bottom: 16px;
+      color: var(--white);
+    }
+
+    .btn {
+      background: var(--surface2);
+      color: var(--white);
+      border: 1px solid var(--border);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      background: #30363d;
+      border-color: #8b949e;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: #e62248;
+      border-color: #e62248;
+    }
+
+    /* Custom Tags Drawer */
+    .drawer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-top: 40px;
+    }
+
+    .drawer-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chip-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .chip button:hover {
+      color: var(--accent);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--white);
+      padding: 10px 16px;
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .loader-container {
+      padding: 60px;
+      text-align: center;
+      color: var(--muted);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(254, 44, 85, 0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 650px) {
+      .video-card {
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .thumb-area {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="logo">🎵</div>
+      <h1>KBC TikTok 概要欄自動生成</h1>
+    </div>
+    <button class="btn btn-primary" id="refreshBtn">最新10件を読み込む</button>
+  </header>
+
+  <main>
+    <div class="section-title">✨ 最新ニュース投稿テキスト</div>
+
+    <div id="videoListContainer">
+      <div class="loader-container">
+        <p>下の「YouTube API設定」を完了して、右上のボタンを押してください。</p>
+      </div>
+    </div>
+
+    <!-- #追加欄 (Custom Keywords) -->
+    <div class="drawer-card">
+      <div class="drawer-title">🏷️ #追加欄 (キーワード辞書)</div>
+      <div class="chip-container" id="customTagContainer">
+        <!-- Chips will be inserted here -->
+      </div>
+      <div class="input-row">
+        <input type="text" id="customTagInput" placeholder="追加したい単語（例：サンセットライブ）" />
+        <button class="btn" id="addCustomTagBtn">候補に追加</button>
+      </div>
+      <p style="font-size: 12px; color: var(--muted); margin-top: 12px;">
+        ※ここに追加した単語が記事タイトル・概要欄に含まれている場合、自動でハッシュタグとして選ばれます。
+      </p>
+    </div>
+
+    <!-- API KEY Section (Moved to Bottom) -->
+    <div class="drawer-card" style="margin-top: 20px; opacity: 0.8;">
+      <div class="drawer-title">🔑 YouTube API設定</div>
+      <div class="input-row">
+        <input type="password" id="apiKeyInput" placeholder="APIキーを入力" />
+        <button class="btn" id="saveKeyBtn">設定保存</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    /* =====================================================
+       定数・設定
+    ===================================================== */
+    const CHANNEL_ID = 'UCS8ZQejq2CL-nZcnRWZCA5Q';
+    const LOCKED_TAG = 'tiktokでニュース';
+    const SEPARATOR = '◆';
+    const APIKEY_KEY = 'kbc_yt_apikey_v2';
+    const CUSTOM_TAGS_KEY = 'kbc_custom_tags';
+
+    /* --- 地名リスト --- */
+    const REGIONS = ['福岡', '佐賀'];
+    const CITIES = [
+      "福岡市", "北九州市", "博多", "天神", "小倉", "門司", "久留米市", "大牟田市", "直方市", "田川市", "柳川市", "八女市", "筑後市", "大川市", "行橋市", "豊前市", "中間市", "小郡市", "筑紫野市", "春日市", "大野城市", "宗像市", "太宰府市", "古賀市", "福津市", "うきは市", "宮若市", "嘉麻市", "朝倉市", "みやま市", "糸島市", "那珂川市",
+      "佐賀市", "唐津市", "鳥栖市", "多久市", "伊万里市", "武雄市", "鹿島市", "小城市", "嬉野市", "神埼市"
+    ];
+
+    const CATEGORIES = [
+      { tag: '事件', kw: ['逮捕', '容疑者', '捜査', '詐欺', '窃盗', '傷害', '殺人', '強盗', '摘発', '特殊詐欺'] },
+      { tag: '事故', kw: ['事故', '衝突', '追突', '死亡', '負傷', 'けが', '炎上', '爆発'] },
+      { tag: '農業', kw: ['農業', '農家', '米', '野菜', '果物', '収穫', 'JA', '田植え'] },
+      { tag: '子育て', kw: ['子育て', '保育園', '幼稚園', 'こども', '育休', '出産', '妊娠'] },
+      { tag: '教育', kw: ['学校', '教育', '授業', '入試', '受験', '卒業', '入学'] },
+      { tag: '物価高', kw: ['物価', '値上がり', '値上げ', '高騰', 'インフレ'] },
+      { tag: 'スポーツ', kw: ['スポーツ', '優勝', '大会', '代表', 'ホークス', 'ソフトバンク', 'アビスパ', 'サガン鳥栖'] },
+      { tag: '気象', kw: ['大雨', '豪雨', '浸水', '台風', '猛暑', '熱中症', '地震'] },
+      { tag: 'グルメ', kw: ['グルメ', 'ランチ', 'ラーメン', 'カフェ', 'スイーツ'] },
+      { tag: '交通', kw: ['渋滞', '新幹線', '踏切', '空港'] }
+    ];
+
+    /* =====================================================
+       ハッシュタグ選定ロジック (Version 3)
+    ===================================================== */
+    function generateHashtags(title, desc) {
+      const text = title + " " + desc;
+      const selectedTags = [];
+      const customTags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
+
+      // 1. 地域 (福岡・佐賀) - 市町村があっても必ず入れる
+      REGIONS.forEach(r => {
+        if (text.includes(r)) {
+          selectedTags.push({ name: r, type: 'region' });
+        }
+      });
+
+      // 2. 市区町村 (1つに制限)
+      let foundCity = "";
+      for (const city of CITIES) {
+        if (text.includes(city)) {
+          foundCity = city;
+          break;
+        }
+      }
+      if (foundCity) {
+        // 地域の名前と重複しない場合のみ追加
+        if (!selectedTags.find(t => t.name === foundCity.replace(/市$/, ''))) {
+          selectedTags.push({ name: foundCity, type: 'city' });
+        }
+      }
+
+      // 3. カスタムキーワード辞書 (#追加欄 からの検索)
+      customTags.forEach(ct => {
+        if (text.includes(ct)) {
+          if (!selectedTags.find(t => t.name === ct)) {
+            selectedTags.push({ name: ct, type: 'custom' });
+          }
+        }
+      });
+
+      // 4. 内容カテゴリ (スコア順)
+      const catScores = CATEGORIES.map(cat => {
+        let s = 0;
+        cat.kw.forEach(k => { if (text.includes(k)) s++; });
+        return { name: cat.tag, score: s };
+      }).filter(c => c.score > 0).sort((a, b) => b.score - a.score);
+
+      catScores.forEach(cs => {
+        if (selectedTags.length < 5) { // 全体でLocked合わせて6個目安
+          if (!selectedTags.find(t => t.name === cs.name)) {
+            selectedTags.push({ name: cs.name, type: 'category' });
+          }
+        }
+      });
+
+      return selectedTags.slice(0, 5); // 欲張りすぎないように
+    }
+
+    /* =====================================================
+       UI・カスタムタグ管理
+    ===================================================== */
+    function renderCustomTags() {
+      const container = document.getElementById('customTagContainer');
+      const tags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
+      container.innerHTML = '';
+      tags.forEach((tag, idx) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerHTML = `<span>${tag}</span><button onclick="removeCustomTag(${idx})">×</button>`;
+        container.appendChild(chip);
+      });
+    }
+
+    function addCustomTag() {
+      const input = document.getElementById('customTagInput');
+      const word = input.value.trim();
+      if (!word) return;
+      const tags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
+      if (!tags.includes(word)) {
+        tags.push(word);
+        localStorage.setItem(CUSTOM_TAGS_KEY, JSON.stringify(tags));
+        renderCustomTags();
+      }
+      input.value = '';
+    }
+
+    window.removeCustomTag = function (idx) {
+      const tags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
+      tags.splice(idx, 1);
+      localStorage.setItem(CUSTOM_TAGS_KEY, JSON.stringify(tags));
+      renderCustomTags();
+    };
+
+    /* =====================================================
+       メイン処理
+    ===================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedKey = localStorage.getItem(APIKEY_KEY);
+      if (savedKey) {
+        document.getElementById('apiKeyInput').value = savedKey;
+        fetchVideos();
+      }
+      renderCustomTags();
+
+      document.getElementById('saveKeyBtn').addEventListener('click', () => {
+        localStorage.setItem(APIKEY_KEY, document.getElementById('apiKeyInput').value.trim());
+        alert('API設定を保存しました。');
+      });
+
+      document.getElementById('addCustomTagBtn').addEventListener('click', addCustomTag);
+      document.getElementById('refreshBtn').addEventListener('click', fetchVideos);
+    });
+
+    async function fetchVideos() {
+      const apiKey = localStorage.getItem(APIKEY_KEY);
+      if (!apiKey) return alert('APIキーを設定してください。');
+
+      const container = document.getElementById('videoListContainer');
+      container.innerHTML = '<div class="loader-container"><div class="spinner"></div><p>YouTubeから動画を取得中...</p></div>';
+
+      try {
+        const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${apiKey}`);
+        const channelData = await channelRes.json();
+        if (channelData.error) throw new Error(channelData.error.message);
+        const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+
+        const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=10&key=${apiKey}`);
+        const playlistData = await playlistRes.json();
+
+        container.innerHTML = '';
+        playlistData.items.forEach(item => renderVideo(item.snippet));
+
+      } catch (err) {
+        container.innerHTML = `<div class="loader-container" style="color:var(--accent)">エラー: ${err.message}</div>`;
+      }
+    }
+
+    function renderVideo(snippet) {
+      const title = snippet.title;
+      if (title.includes('#shorts')) return;
+
+      const desc = snippet.description || "";
+      const firstSentence = (desc.split('。')[0] + (desc.includes('。') ? '。' : '')).replace(/\r?\n/g, '');
+      const cleanTitle = title.replace(/\r?\n/g, '');
+
+      const autoTags = generateHashtags(title, desc);
+      const tagString = "#" + LOCKED_TAG + " " + autoTags.map(t => "#" + t.name).join(' ');
+      const combined = cleanTitle + SEPARATOR + firstSentence + " " + tagString;
+
+      const card = document.createElement('div');
+      card.className = 'video-card';
+      card.innerHTML = `
+    <div class="thumb-area"><img src="${snippet.thumbnails.medium.url}"></div>
+    <div class="content-area">
+      <div class="v-title">${cleanTitle}</div>
+      <div class="tags-preview">
+        <span class="tag-badge locked">#${LOCKED_TAG}</span>
+        ${autoTags.map(t => `<span class="tag-badge ${t.type}">#${t.name}</span>`).join('')}
+      </div>
+      <div class="output-box">
+        <div class="output-text" id="t-${snippet.resourceId.videoId}">${combined}</div>
+        <button class="btn btn-primary" onclick="copyToClipboard(this, 't-${snippet.resourceId.videoId}')">📋 コピー</button>
+      </div>
+    </div>
+  `;
+      document.getElementById('videoListContainer').appendChild(card);
+    }
+
+    window.copyToClipboard = function (btn, targetId) {
+      const text = document.getElementById(targetId).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const original = btn.innerText;
+        btn.innerText = '✅ コピー完了';
+        btn.style.background = '#238636';
+        setTimeout(() => {
+          btn.innerText = original;
+          btn.style.background = '#fe2c55';
+        }, 2000);
+      });
+    };
+  </script>
+</body>
+
+</html>
