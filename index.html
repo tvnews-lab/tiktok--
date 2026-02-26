@@ -343,6 +343,15 @@
       </div>
     </div>
 
+    <!-- #オプション設定 -->
+    <div class="drawer-card">
+      <div class="drawer-title">🔒 固定ハッシュタグ (常に挿入)</div>
+      <div class="chip-container">
+        <div class="chip">#tiktokでニュース</div>
+        <div class="chip">#KBC</div>
+      </div>
+    </div>
+
     <!-- #追加欄 (Custom Keywords) -->
     <div class="drawer-card">
       <div class="drawer-title">🏷️ #追加欄 (キーワード辞書)</div>
@@ -353,12 +362,9 @@
         <input type="text" id="customTagInput" placeholder="追加したい単語（例：サンセットライブ）" />
         <button class="btn" id="addCustomTagBtn">候補に追加</button>
       </div>
-      <p style="font-size: 12px; color: var(--muted); margin-top: 12px;">
-        ※ここに追加した単語が記事タイトル・概要欄に含まれている場合、自動でハッシュタグとして選ばれます。
-      </p>
     </div>
 
-    <!-- API KEY Section (Moved to Bottom) -->
+    <!-- API KEY Section -->
     <div class="drawer-card" style="margin-top: 20px; opacity: 0.8;">
       <div class="drawer-title">🔑 YouTube API設定</div>
       <div class="input-row">
@@ -373,7 +379,7 @@
        定数・設定
     ===================================================== */
     const CHANNEL_ID = 'UCS8ZQejq2CL-nZcnRWZCA5Q';
-    const LOCKED_TAG = 'tiktokでニュース';
+    const FIXED_TAGS = ['tiktokでニュース', 'KBC'];
     const SEPARATOR = '◆';
     const APIKEY_KEY = 'kbc_yt_apikey_v2';
     const CUSTOM_TAGS_KEY = 'kbc_custom_tags';
@@ -385,12 +391,18 @@
       "佐賀市", "唐津市", "鳥栖市", "多久市", "伊万里市", "武雄市", "鹿島市", "小城市", "嬉野市", "神埼市"
     ];
 
+    /* --- カテゴリ辞書 (Version 4: 西鉄, JR, 大学等追加) --- */
     const CATEGORIES = [
       { tag: '事件', kw: ['逮捕', '容疑者', '捜査', '詐欺', '窃盗', '傷害', '殺人', '強盗', '摘発', '特殊詐欺'] },
       { tag: '事故', kw: ['事故', '衝突', '追突', '死亡', '負傷', 'けが', '炎上', '爆発'] },
       { tag: '農業', kw: ['農業', '農家', '米', '野菜', '果物', '収穫', 'JA', '田植え'] },
       { tag: '子育て', kw: ['子育て', '保育園', '幼稚園', 'こども', '育休', '出産', '妊娠'] },
       { tag: '教育', kw: ['学校', '教育', '授業', '入試', '受験', '卒業', '入学'] },
+      { tag: '祭り', kw: ['祭り', 'まつり', '山笠', 'どんたく', '放生会', '博多祇園山笠'] },
+      { tag: '西鉄', kw: ['西鉄', '西日本鉄道', '高速バス', '天神大牟田線'] },
+      { tag: 'JR', kw: ['JR', '九州旅客鉄道', '新幹線', '博多駅'] },
+      { tag: '九州大学', kw: ['九州大学', '九大', '伊都キャンパス'] },
+      { tag: '西南大学', kw: ['西南大学', '西南学院', '西南'] },
       { tag: '物価高', kw: ['物価', '値上がり', '値上げ', '高騰', 'インフレ'] },
       { tag: 'スポーツ', kw: ['スポーツ', '優勝', '大会', '代表', 'ホークス', 'ソフトバンク', 'アビスパ', 'サガン鳥栖'] },
       { tag: '気象', kw: ['大雨', '豪雨', '浸水', '台風', '猛暑', '熱中症', '地震'] },
@@ -399,14 +411,14 @@
     ];
 
     /* =====================================================
-       ハッシュタグ選定ロジック (Version 3)
+       ハッシュタグ選定ロジック
     ===================================================== */
     function generateHashtags(title, desc) {
       const text = title + " " + desc;
       const selectedTags = [];
       const customTags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
 
-      // 1. 地域 (福岡・佐賀) - 市町村があっても必ず入れる
+      // 1. 地域 (福岡・佐賀)
       REGIONS.forEach(r => {
         if (text.includes(r)) {
           selectedTags.push({ name: r, type: 'region' });
@@ -423,12 +435,13 @@
       }
       if (foundCity) {
         // 地域の名前と重複しない場合のみ追加
-        if (!selectedTags.find(t => t.name === foundCity.replace(/市$/, ''))) {
+        const regionNames = selectedTags.map(t => t.name);
+        if (!regionNames.includes(foundCity.replace(/市$/, ''))) {
           selectedTags.push({ name: foundCity, type: 'city' });
         }
       }
 
-      // 3. カスタムキーワード辞書 (#追加欄 からの検索)
+      // 3. カスタムキーワード辞書
       customTags.forEach(ct => {
         if (text.includes(ct)) {
           if (!selectedTags.find(t => t.name === ct)) {
@@ -445,14 +458,14 @@
       }).filter(c => c.score > 0).sort((a, b) => b.score - a.score);
 
       catScores.forEach(cs => {
-        if (selectedTags.length < 5) { // 全体でLocked合わせて6個目安
-          if (!selectedTags.find(t => t.name === cs.name)) {
+        if (selectedTags.length < 5) {
+          if (!selectedTags.find(t => t.name === cs.name) && !FIXED_TAGS.includes(cs.name)) {
             selectedTags.push({ name: cs.name, type: 'category' });
           }
         }
       });
 
-      return selectedTags.slice(0, 5); // 欲張りすぎないように
+      return selectedTags.slice(0, 5);
     }
 
     /* =====================================================
@@ -543,7 +556,7 @@
       const cleanTitle = title.replace(/\r?\n/g, '');
 
       const autoTags = generateHashtags(title, desc);
-      const tagString = "#" + LOCKED_TAG + " " + autoTags.map(t => "#" + t.name).join(' ');
+      const tagString = FIXED_TAGS.map(t => "#" + t).join(' ') + " " + autoTags.map(t => "#" + t.name).join(' ');
       const combined = cleanTitle + SEPARATOR + firstSentence + " " + tagString;
 
       const card = document.createElement('div');
@@ -553,7 +566,7 @@
     <div class="content-area">
       <div class="v-title">${cleanTitle}</div>
       <div class="tags-preview">
-        <span class="tag-badge locked">#${LOCKED_TAG}</span>
+        ${FIXED_TAGS.map(t => `<span class="tag-badge locked">#${t}</span>`).join('')}
         ${autoTags.map(t => `<span class="tag-badge ${t.type}">#${t.name}</span>`).join('')}
       </div>
       <div class="output-box">
