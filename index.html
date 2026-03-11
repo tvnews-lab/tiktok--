@@ -1,596 +1,367 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KBC TikTok 概要欄自動生成</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap"
-    rel="stylesheet" />
-  <style>
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KBC TikTok 概要欄自動生成</title>
 
-    :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --surface2: #21262d;
-      --border: rgba(240, 246, 252, 0.1);
-      --accent: #fe2c55;
-      --accent2: #69c9d0;
-      --yt: #ff0000;
-      --text: #c9d1d9;
-      --white: #ffffff;
-      --muted: #8b949e;
-      --success: #238636;
-      --radius: 12px;
-    }
+<style>
+body{
+font-family:sans-serif;
+background:#0d1117;
+color:#c9d1d9;
+margin:0;
+padding:20px;
+}
 
-    body {
-      font-family: 'Noto Sans JP', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      padding-bottom: 80px;
-    }
+button{
+padding:10px 20px;
+border:none;
+background:#fe2c55;
+color:white;
+border-radius:6px;
+cursor:pointer;
+}
 
-    header {
-      background: rgba(13, 17, 23, 0.8);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+.video-card{
+background:#161b22;
+border-radius:10px;
+padding:20px;
+margin-bottom:20px;
+}
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+.thumb{
+width:220px;
+}
 
-    .logo {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      color: white;
-    }
+.tags{
+margin-top:10px;
+font-size:13px;
+}
 
-    h1 {
-      font-size: 16px;
-      font-weight: 900;
-      color: var(--white);
-    }
+.output{
+background:#0d1117;
+padding:10px;
+margin-top:10px;
+border-radius:6px;
+}
 
-    main {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 24px 16px;
-    }
-
-    .section-title {
-      font-size: 20px;
-      font-weight: 900;
-      color: var(--white);
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* Video Card */
-    .video-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 20px;
-      display: flex;
-      gap: 24px;
-      transition: 0.2s;
-    }
-
-    .video-card:hover {
-      border-color: rgba(254, 44, 85, 0.4);
-    }
-
-    .thumb-area {
-      width: 220px;
-      flex-shrink: 0;
-    }
-
-    .thumb-area img {
-      width: 100%;
-      border-radius: 8px;
-      aspect-ratio: 16/9;
-      object-fit: cover;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    }
-
-    .content-area {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .v-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--white);
-      margin-bottom: 12px;
-      line-height: 1.5;
-    }
-
-    .tags-preview {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .tag-badge {
-      font-size: 11px;
-      padding: 3px 10px;
-      border-radius: 6px;
-      background: rgba(110, 118, 129, 0.2);
-      border: 1px solid rgba(110, 118, 129, 0.4);
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-    .tag-badge.region {
-      background: rgba(105, 201, 208, 0.15);
-      border-color: rgba(105, 201, 208, 0.5);
-      color: var(--accent2);
-    }
-
-    .tag-badge.city {
-      background: rgba(254, 44, 85, 0.15);
-      border-color: rgba(254, 44, 85, 0.5);
-      color: var(--accent);
-    }
-
-    .tag-badge.custom {
-      background: rgba(251, 191, 36, 0.15);
-      border-color: rgba(251, 191, 36, 0.5);
-      color: #fbbf24;
-    }
-
-    .tag-badge.locked {
-      background: var(--white);
-      color: var(--bg);
-      font-weight: 900;
-      border: none;
-    }
-
-    .output-box {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      font-size: 14px;
-    }
-
-    .output-text {
-      white-space: pre-wrap;
-      word-break: break-all;
-      margin-bottom: 16px;
-      color: var(--white);
-    }
-
-    .btn {
-      background: var(--surface2);
-      color: var(--white);
-      border: 1px solid var(--border);
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 700;
-      transition: 0.2s;
-    }
-
-    .btn:hover {
-      background: #30363d;
-      border-color: #8b949e;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-
-    .btn-primary:hover {
-      background: #e62248;
-      border-color: #e62248;
-    }
-
-    /* Custom Tags Drawer */
-    .drawer-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-top: 40px;
-    }
-
-    .drawer-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--white);
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .chip-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .chip {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      padding: 4px 12px;
-      border-radius: 99px;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .chip button {
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 14px;
-      line-height: 1;
-    }
-
-    .chip button:hover {
-      color: var(--accent);
-    }
-
-    .input-row {
-      display: flex;
-      gap: 8px;
-    }
-
-    input[type="text"],
-    input[type="password"] {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--white);
-      padding: 10px 16px;
-      flex: 1;
-      font-size: 14px;
-    }
-
-    .loader-container {
-      padding: 60px;
-      text-align: center;
-      color: var(--muted);
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(254, 44, 85, 0.1);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 16px;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    @media (max-width: 650px) {
-      .video-card {
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .thumb-area {
-        width: 100%;
-      }
-    }
-  </style>
+</style>
 </head>
 
 <body>
 
-  <header>
-    <div class="brand">
-      <div class="logo">🎵</div>
-      <h1>KBC TikTok 概要欄自動生成</h1>
-    </div>
-    <button class="btn btn-primary" id="refreshBtn">最新10件を読み込む</button>
-  </header>
+<h2>KBC TikTok 概要欄生成</h2>
+<button onclick="fetchVideos()">最新動画取得</button>
 
-  <main>
-    <div class="section-title">✨ 最新ニュース投稿テキスト</div>
+<div id="videoList"></div>
 
-    <div id="videoListContainer">
-      <div class="loader-container">
-        <p>下の「YouTube API設定」を完了して、右上のボタンを押してください。</p>
-      </div>
-    </div>
+<script>
 
-    <!-- #オプション設定 -->
-    <div class="drawer-card">
-      <div class="drawer-title">🔒 固定ハッシュタグ (常に挿入)</div>
-      <div class="chip-container">
-        <div class="chip">#tiktokでニュース</div>
-        <div class="chip">#KBC</div>
-      </div>
-    </div>
+/* =========================
+固定設定
+========================= */
 
-    <!-- #追加欄 (Custom Keywords) -->
-    <div class="drawer-card">
-      <div class="drawer-title">🏷️ #追加欄 (キーワード辞書)</div>
-      <div class="chip-container" id="customTagContainer">
-        <!-- Chips will be inserted here -->
-      </div>
-      <div class="input-row">
-        <input type="text" id="customTagInput" placeholder="追加したい単語（例：サンセットライブ）" />
-        <button class="btn" id="addCustomTagBtn">候補に追加</button>
-      </div>
-    </div>
+const CHANNEL_ID="UCS8ZQejq2CL-nZcnRWZCA5Q"
+const FIXED_TAGS=["tiktokでニュース","KBC"]
 
-    <!-- API KEY Section -->
-    <div class="drawer-card" style="margin-top: 20px; opacity: 0.8;">
-      <div class="drawer-title">🔑 YouTube API設定</div>
-      <div class="input-row">
-        <input type="password" id="apiKeyInput" placeholder="APIキーを入力" />
-        <button class="btn" id="saveKeyBtn">設定保存</button>
-      </div>
-    </div>
-  </main>
+const REGIONS=["福岡","佐賀"]
 
-  <script>
-    /* =====================================================
-       定数・設定
-    ===================================================== */
-    const CHANNEL_ID = 'UCS8ZQejq2CL-nZcnRWZCA5Q';
-    const FIXED_TAGS = ['tiktokでニュース', 'KBC'];
-    const SEPARATOR = '◆';
-    const APIKEY_KEY = 'kbc_yt_apikey_v2';
-    const CUSTOM_TAGS_KEY = 'kbc_custom_tags';
+/* =========================
+JR駅
+========================= */
 
-    /* --- 地名リスト --- */
-    const REGIONS = ['福岡', '佐賀'];
-    const CITIES = [
-      "福岡市", "北九州市", "博多", "天神", "小倉", "門司", "久留米市", "大牟田市", "直方市", "田川市", "柳川市", "八女市", "筑後市", "大川市", "行橋市", "豊前市", "中間市", "小郡市", "筑紫野市", "春日市", "大野城市", "宗像市", "太宰府市", "古賀市", "福津市", "うきは市", "宮若市", "嘉麻市", "朝倉市", "みやま市", "糸島市", "那珂川市",
-      "佐賀市", "唐津市", "鳥栖市", "多久市", "伊万里市", "武雄市", "鹿島市", "小城市", "嬉野市", "神埼市"
-    ];
+const JR_STATIONS = [
 
-    /* --- カテゴリ辞書 (Version 4: 西鉄, JR, 大学等追加) --- */
-    const CATEGORIES = [
-      { tag: '事件', kw: ['逮捕', '容疑者', '捜査', '詐欺', '窃盗', '傷害', '殺人', '強盗', '摘発', '特殊詐欺'] },
-      { tag: '事故', kw: ['事故', '衝突', '追突', '死亡', '負傷', 'けが', '炎上', '爆発'] },
-      { tag: '農業', kw: ['農業', '農家', '米', '野菜', '果物', '収穫', 'JA', '田植え'] },
-      { tag: '子育て', kw: ['子育て', '保育園', '幼稚園', 'こども', '育休', '出産', '妊娠'] },
-      { tag: '教育', kw: ['学校', '教育', '授業', '入試', '受験', '卒業', '入学'] },
-      { tag: '祭り', kw: ['祭り', 'まつり', '山笠', 'どんたく', '放生会', '博多祇園山笠'] },
-      { tag: '西鉄', kw: ['西鉄', '西日本鉄道', '高速バス', '天神大牟田線'] },
-      { tag: 'JR', kw: ['JR', '九州旅客鉄道', '新幹線', '博多駅'] },
-      { tag: '九州大学', kw: ['九州大学', '九大', '伊都キャンパス'] },
-      { tag: '西南大学', kw: ['西南大学', '西南学院', '西南'] },
-      { tag: '物価高', kw: ['物価', '値上がり', '値上げ', '高騰', 'インフレ'] },
-      { tag: 'スポーツ', kw: ['スポーツ', '優勝', '大会', '代表', 'ホークス', 'ソフトバンク', 'アビスパ', 'サガン鳥栖'] },
-      { tag: '気象', kw: ['大雨', '豪雨', '浸水', '台風', '猛暑', '熱中症', '地震'] },
-      { tag: 'グルメ', kw: ['グルメ', 'ランチ', 'ラーメン', 'カフェ', 'スイーツ'] },
-      { tag: '交通', kw: ['渋滞', '新幹線', '踏切', '空港'] }
-    ];
+/* 鹿児島本線 */
 
-    /* =====================================================
-       ハッシュタグ選定ロジック
-    ===================================================== */
-    function generateHashtags(title, desc) {
-      const text = title + " " + desc;
-      const selectedTags = [];
-      const customTags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
+"門司港駅","門司駅","小森江駅","門司港","小倉駅","西小倉駅",
+"九州工大前駅","戸畑駅","枝光駅","スペースワールド駅",
+"八幡駅","黒崎駅","陣原駅","折尾駅","水巻駅","遠賀川駅",
+"海老津駅","教育大前駅","赤間駅","東郷駅","東福間駅",
+"福間駅","千鳥駅","古賀駅","ししぶ駅","新宮中央駅",
+"福工大前駅","九産大前駅","香椎駅","千早駅","箱崎駅",
+"吉塚駅","博多駅","竹下駅","笹原駅","南福岡駅",
+"春日駅","大野城駅","水城駅","都府楼南駅","二日市駅",
+"天拝山駅","原田駅","けやき台駅","基山駅",
+"弥生が丘駅","田代駅","鳥栖駅",
 
-      // 1. 地域 (福岡・佐賀)
-      REGIONS.forEach(r => {
-        if (text.includes(r)) {
-          selectedTags.push({ name: r, type: 'region' });
-        }
-      });
+/* 篠栗線 */
 
-      // 2. 市区町村 (1つに制限)
-      let foundCity = "";
-      for (const city of CITIES) {
-        if (text.includes(city)) {
-          foundCity = city;
-          break;
-        }
-      }
-      if (foundCity) {
-        // 地域の名前と重複しない場合のみ追加
-        const regionNames = selectedTags.map(t => t.name);
-        if (!regionNames.includes(foundCity.replace(/市$/, ''))) {
-          selectedTags.push({ name: foundCity, type: 'city' });
-        }
-      }
+"柚須駅","原町駅","長者原駅","門松駅","篠栗駅","筑前山手駅",
+"城戸南蔵院前駅","九郎原駅","筑前大分駅","桂川駅",
 
-      // 3. カスタムキーワード辞書
-      customTags.forEach(ct => {
-        if (text.includes(ct)) {
-          if (!selectedTags.find(t => t.name === ct)) {
-            selectedTags.push({ name: ct, type: 'custom' });
-          }
-        }
-      });
+/* 香椎線 */
 
-      // 4. 内容カテゴリ (スコア順)
-      const catScores = CATEGORIES.map(cat => {
-        let s = 0;
-        cat.kw.forEach(k => { if (text.includes(k)) s++; });
-        return { name: cat.tag, score: s };
-      }).filter(c => c.score > 0).sort((a, b) => b.score - a.score);
+"西戸崎駅","海ノ中道駅","雁ノ巣駅","奈多駅","和白駅",
+"香椎駅","香椎神宮駅","舞松原駅","土井駅","伊賀駅",
+"長者原駅","酒殿駅","須恵駅","須恵中央駅","新原駅",
+"宇美駅",
 
-      catScores.forEach(cs => {
-        if (selectedTags.length < 5) {
-          if (!selectedTags.find(t => t.name === cs.name) && !FIXED_TAGS.includes(cs.name)) {
-            selectedTags.push({ name: cs.name, type: 'category' });
-          }
-        }
-      });
+/* 日豊本線 */
 
-      return selectedTags.slice(0, 5);
-    }
+"西小倉駅","南小倉駅","城野駅","安部山公園駅",
+"下曽根駅","朽網駅","苅田駅","小波瀬西工大前駅",
 
-    /* =====================================================
-       UI・カスタムタグ管理
-    ===================================================== */
-    function renderCustomTags() {
-      const container = document.getElementById('customTagContainer');
-      const tags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
-      container.innerHTML = '';
-      tags.forEach((tag, idx) => {
-        const chip = document.createElement('div');
-        chip.className = 'chip';
-        chip.innerHTML = `<span>${tag}</span><button onclick="removeCustomTag(${idx})">×</button>`;
-        container.appendChild(chip);
-      });
-    }
+/* 日田彦山線 */
 
-    function addCustomTag() {
-      const input = document.getElementById('customTagInput');
-      const word = input.value.trim();
-      if (!word) return;
-      const tags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
-      if (!tags.includes(word)) {
-        tags.push(word);
-        localStorage.setItem(CUSTOM_TAGS_KEY, JSON.stringify(tags));
-        renderCustomTags();
-      }
-      input.value = '';
-    }
+"小倉駅","西小倉駅","南小倉駅","城野駅",
+"石田駅","志井公園駅","志井駅","石原町駅",
+"呼野駅","採銅所駅","香春駅","一本松駅",
+"田川伊田駅"
 
-    window.removeCustomTag = function (idx) {
-      const tags = JSON.parse(localStorage.getItem(CUSTOM_TAGS_KEY) || "[]");
-      tags.splice(idx, 1);
-      localStorage.setItem(CUSTOM_TAGS_KEY, JSON.stringify(tags));
-      renderCustomTags();
-    };
+/* 久大本線 */
 
-    /* =====================================================
-       メイン処理
-    ===================================================== */
-    window.addEventListener('DOMContentLoaded', () => {
-      const savedKey = localStorage.getItem(APIKEY_KEY);
-      if (savedKey) {
-        document.getElementById('apiKeyInput').value = savedKey;
-        fetchVideos();
-      }
-      renderCustomTags();
+,"久留米駅","久留米高校前駅","南久留米駅","久留米大学前駅",
+"御井駅","善導寺駅","筑後草野駅","田主丸駅"
+]
 
-      document.getElementById('saveKeyBtn').addEventListener('click', () => {
-        localStorage.setItem(APIKEY_KEY, document.getElementById('apiKeyInput').value.trim());
-        alert('API設定を保存しました。');
-      });
+/* =========================
+地下鉄駅
+========================= */
 
-      document.getElementById('addCustomTagBtn').addEventListener('click', addCustomTag);
-      document.getElementById('refreshBtn').addEventListener('click', fetchVideos);
-    });
+const SUBWAY_STATIONS = [
 
-    async function fetchVideos() {
-      const apiKey = localStorage.getItem(APIKEY_KEY);
-      if (!apiKey) return alert('APIキーを設定してください。');
+/* 空港線 */
 
-      const container = document.getElementById('videoListContainer');
-      container.innerHTML = '<div class="loader-container"><div class="spinner"></div><p>YouTubeから動画を取得中...</p></div>';
+"姪浜駅","室見駅","藤崎駅","西新駅",
+"唐人町駅","大濠公園駅","赤坂駅","天神駅",
+"中洲川端駅","祇園駅","博多駅","東比恵駅","福岡空港駅",
 
-      try {
-        const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${apiKey}`);
-        const channelData = await channelRes.json();
-        if (channelData.error) throw new Error(channelData.error.message);
-        const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+/* 箱崎線 */
 
-        const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=10&key=${apiKey}`);
-        const playlistData = await playlistRes.json();
+"中洲川端駅","呉服町駅","千代県庁口駅",
+"馬出九大病院前駅","箱崎宮前駅","箱崎九大前駅",
+"貝塚駅",
 
-        container.innerHTML = '';
-        playlistData.items.forEach(item => renderVideo(item.snippet));
+/* 七隈線 */
 
-      } catch (err) {
-        container.innerHTML = `<div class="loader-container" style="color:var(--accent)">エラー: ${err.message}</div>`;
-      }
-    }
+"橋本駅","次郎丸駅","賀茂駅","野芥駅",
+"梅林駅","福大前駅","七隈駅","金山駅",
+"茶山駅","別府駅","六本松駅","桜坂駅",
+"薬院大通駅","薬院駅","渡辺通駅",
+"天神南駅","櫛田神社前駅","博多駅"
 
-    function renderVideo(snippet) {
-      const title = snippet.title;
-      if (title.includes('#shorts')) return;
+]
 
-      const desc = snippet.description || "";
-      const firstSentence = (desc.split('。')[0] + (desc.includes('。') ? '。' : '')).replace(/\r?\n/g, '');
-      const cleanTitle = title.replace(/\r?\n/g, '');
+/* =========================
+西鉄駅
+========================= */
 
-      const autoTags = generateHashtags(title, desc);
-      const tagString = FIXED_TAGS.map(t => "#" + t).join(' ') + " " + autoTags.map(t => "#" + t.name).join(' ');
-      const combined = cleanTitle + SEPARATOR + firstSentence + " " + tagString;
+const NISHITETSU_STATIONS = [
 
-      const card = document.createElement('div');
-      card.className = 'video-card';
-      card.innerHTML = `
-    <div class="thumb-area"><img src="${snippet.thumbnails.medium.url}"></div>
-    <div class="content-area">
-      <div class="v-title">${cleanTitle}</div>
-      <div class="tags-preview">
-        ${FIXED_TAGS.map(t => `<span class="tag-badge locked">#${t}</span>`).join('')}
-        ${autoTags.map(t => `<span class="tag-badge ${t.type}">#${t.name}</span>`).join('')}
-      </div>
-      <div class="output-box">
-        <div class="output-text" id="t-${snippet.resourceId.videoId}">${combined}</div>
-        <button class="btn btn-primary" onclick="copyToClipboard(this, 't-${snippet.resourceId.videoId}')">📋 コピー</button>
-      </div>
-    </div>
-  `;
-      document.getElementById('videoListContainer').appendChild(card);
-    }
+"西鉄福岡駅",
+"薬院駅",
+"西鉄平尾駅",
+"高宮駅",
+"大橋駅",
+"井尻駅",
+"雑餉隈駅",
+"春日原駅",
+"白木原駅",
+"下大利駅",
+"都府楼前駅",
+"西鉄二日市駅",
+"紫駅",
+"朝倉街道駅",
+"桜台駅",
+"筑紫駅",
+"津古駅",
+"三国が丘駅",
+"三沢駅",
+"大保駅",
+"西鉄小郡駅",
+"端間駅",
+"味坂駅",
+"宮の陣駅",
+"櫛原駅",
+"西鉄久留米駅",
+"花畑駅",
+"聖マリア病院前駅",
+"津福駅",
+"安武駅",
+"大善寺駅"
 
-    window.copyToClipboard = function (btn, targetId) {
-      const text = document.getElementById(targetId).innerText;
-      navigator.clipboard.writeText(text).then(() => {
-        const original = btn.innerText;
-        btn.innerText = '✅ コピー完了';
-        btn.style.background = '#238636';
-        setTimeout(() => {
-          btn.innerText = original;
-          btn.style.background = '#fe2c55';
-        }, 2000);
-      });
-    };
-  </script>
+]
+
+/* =========================
+エリア
+========================= */
+
+const AREAS=[
+"天神","博多","中洲","大名","薬院",
+"今泉","赤坂","六本松","西新","姪浜",
+"香椎","箱崎","千早","吉塚","竹下"
+]
+
+/* =========================
+区
+========================= */
+
+const WARDS=[
+"中央区","博多区","東区","西区",
+"南区","城南区","早良区","門司区",
+"小倉北区",
+"小倉南区",
+"戸畑区",
+"八幡東区",
+"八幡西区",
+"若松区"
+]
+
+/* =========================
+市
+========================= */
+
+const CITIES=[
+"福岡市","北九州市","久留米市","大牟田市",
+"飯塚市","直方市","田川市","柳川市"
+]
+
+/* =========================
+カテゴリ
+========================= */
+
+const CATEGORIES=[
+{tag:"事件",kw:["逮捕","容疑者","殺人","強盗","詐欺","窃盗"]},
+{tag:"事故",kw:["事故","衝突","追突","死亡","けが"]},
+{tag:"火事",kw:["火事","火災","炎上"]},
+{tag:"災害",kw:["地震","台風","大雨","浸水"]},
+{tag:"スポーツ",kw:["ホークス","アビスパ","サガン鳥栖","優勝"]},
+{tag:"交通",kw:["新幹線","渋滞","踏切"]},
+{tag:"グルメ",kw:["ラーメン","カフェ","グルメ"]}
+]
+
+/* =========================
+タグ生成
+========================= */
+
+function generateHashtags(title,desc){
+
+const text=title+" "+desc
+const tags=[]
+
+function addTag(name){
+if(!tags.includes(name)&&tags.length<3){
+tags.push(name)
+}
+}
+
+/* JR駅 */
+
+JR_STATIONS.forEach(s=>{
+if(text.includes(s)) addTag(s)
+})
+
+/* 地下鉄駅 */
+
+SUBWAY_STATIONS.forEach(s=>{
+if(text.includes(s)) addTag(s)
+})
+
+/* 西鉄駅 */
+
+NISHITETSU_STATIONS.forEach(s=>{
+if(text.includes(s)) addTag(s)
+})
+
+/* エリア */
+
+AREAS.forEach(a=>{
+if(text.includes(a)) addTag(a)
+})
+
+/* 区 */
+
+WARDS.forEach(w=>{
+if(text.includes(w)) addTag(w)
+})
+
+/* 市 */
+
+CITIES.forEach(c=>{
+if(text.includes(c)) addTag(c)
+})
+
+/* 県 */
+
+REGIONS.forEach(r=>{
+if(text.includes(r)) addTag(r)
+})
+
+/* カテゴリ */
+
+CATEGORIES.forEach(cat=>{
+cat.kw.forEach(k=>{
+if(text.includes(k)) addTag(cat.tag)
+})
+})
+
+return tags.slice(0,3)
+
+}
+
+/* =========================
+YouTube取得
+========================= */
+
+async function fetchVideos(){
+
+const API_KEY=prompt("YouTube API Key")
+
+const res=await fetch(
+`https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet&order=date&maxResults=10`
+)
+
+const data=await res.json()
+
+const container=document.getElementById("videoList")
+container.innerHTML=""
+
+data.items.forEach(v=>{
+
+const title=v.snippet.title
+const desc=v.snippet.description
+
+const autoTags=generateHashtags(title,desc)
+
+const tagText=[
+...FIXED_TAGS,
+...autoTags
+].map(t=>"#"+t).join(" ")
+
+const text=`${title}◆${desc.split("。")[0]}。 ${tagText}`
+
+const div=document.createElement("div")
+div.className="video-card"
+
+div.innerHTML=`
+
+<img class="thumb" src="${v.snippet.thumbnails.medium.url}">
+
+<h3>${title}</h3>
+
+<div class="tags">
+${tagText}
+</div>
+
+<div class="output">
+${text}
+</div>
+
+<button onclick="navigator.clipboard.writeText(\`${text}\`)">
+コピー
+</button>
+
+`
+
+container.appendChild(div)
+
+})
+
+}
+
+</script>
+
 </body>
-
 </html>
