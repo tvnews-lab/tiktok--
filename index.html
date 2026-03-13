@@ -21,6 +21,63 @@ background:#fe2c55;
 color:white;
 border-radius:6px;
 cursor:pointer;
+font-size:14px;
+}
+
+button:hover{
+background:#e0264d;
+}
+
+.api-section{
+background:#161b22;
+border-radius:10px;
+padding:20px;
+margin-bottom:20px;
+display:flex;
+align-items:center;
+gap:12px;
+flex-wrap:wrap;
+}
+
+.api-section label{
+font-size:14px;
+color:#8b949e;
+}
+
+.api-section input{
+padding:8px 12px;
+border:1px solid #30363d;
+background:#0d1117;
+color:#c9d1d9;
+border-radius:6px;
+font-size:14px;
+width:340px;
+}
+
+.api-section .saved-badge{
+background:#238636;
+color:white;
+padding:4px 10px;
+border-radius:12px;
+font-size:12px;
+}
+
+.btn-save{
+background:#238636;
+}
+
+.btn-save:hover{
+background:#1f7a30;
+}
+
+.btn-delete{
+background:#da3633;
+font-size:12px;
+padding:6px 14px;
+}
+
+.btn-delete:hover{
+background:#b62d2b;
 }
 
 .video-card{
@@ -32,11 +89,13 @@ margin-bottom:20px;
 
 .thumb{
 width:220px;
+border-radius:6px;
 }
 
 .tags{
 margin-top:10px;
 font-size:13px;
+color:#58a6ff;
 }
 
 .output{
@@ -44,6 +103,12 @@ background:#0d1117;
 padding:10px;
 margin-top:10px;
 border-radius:6px;
+font-size:13px;
+word-break:break-all;
+}
+
+h2{
+margin-top:0;
 }
 
 </style>
@@ -52,6 +117,16 @@ border-radius:6px;
 <body>
 
 <h2>KBC TikTok 概要欄生成</h2>
+
+<!-- APIキー設定エリア -->
+<div class="api-section">
+  <label>YouTube API Key:</label>
+  <input type="password" id="apiKeyInput" placeholder="APIキーを入力">
+  <button class="btn-save" onclick="saveApiKey()">保存</button>
+  <button class="btn-delete" onclick="deleteApiKey()">削除</button>
+  <span id="savedBadge" class="saved-badge" style="display:none;">✔ 保存済み</span>
+</div>
+
 <button onclick="fetchVideos()">最新動画取得</button>
 
 <div id="videoList"></div>
@@ -59,7 +134,7 @@ border-radius:6px;
 <script>
 
 /* =========================
-固定設定
+   固定設定
 ========================= */
 
 const CHANNEL_ID="UCS8ZQejq2CL-nZcnRWZCA5Q"
@@ -68,7 +143,64 @@ const FIXED_TAGS=["tiktokでニュース","KBC"]
 const REGIONS=["福岡","佐賀"]
 
 /* =========================
-JR駅
+   APIキー管理
+========================= */
+
+const API_KEY_STORAGE = "kbc_tiktok_youtube_api_key"
+
+function loadApiKey(){
+  const key = localStorage.getItem(API_KEY_STORAGE)
+  const input = document.getElementById("apiKeyInput")
+  const badge = document.getElementById("savedBadge")
+  if(key){
+    input.value = key
+    badge.style.display = "inline"
+  }
+}
+
+function saveApiKey(){
+  const key = document.getElementById("apiKeyInput").value.trim()
+  if(!key){
+    alert("APIキーを入力してください")
+    return
+  }
+  localStorage.setItem(API_KEY_STORAGE, key)
+  document.getElementById("savedBadge").style.display = "inline"
+  alert("APIキーを保存しました。次回以降は自動で使用されます。")
+}
+
+function deleteApiKey(){
+  localStorage.removeItem(API_KEY_STORAGE)
+  document.getElementById("apiKeyInput").value = ""
+  document.getElementById("savedBadge").style.display = "none"
+  alert("APIキーを削除しました。")
+}
+
+function getApiKey(){
+  // まずlocalStorageから取得、なければ入力欄から取得
+  let key = localStorage.getItem(API_KEY_STORAGE)
+  if(!key){
+    key = document.getElementById("apiKeyInput").value.trim()
+  }
+  if(!key){
+    key = prompt("YouTube API Key を入力してください")
+    if(key){
+      // 入力されたら保存するか確認
+      if(confirm("このAPIキーを保存しますか？（次回以降入力不要になります）")){
+        localStorage.setItem(API_KEY_STORAGE, key)
+        document.getElementById("apiKeyInput").value = key
+        document.getElementById("savedBadge").style.display = "inline"
+      }
+    }
+  }
+  return key
+}
+
+// ページ読み込み時にAPIキーを復元
+window.addEventListener("DOMContentLoaded", loadApiKey)
+
+/* =========================
+   JR駅
 ========================= */
 
 const JR_STATIONS = [
@@ -117,7 +249,7 @@ const JR_STATIONS = [
 ]
 
 /* =========================
-地下鉄駅
+   地下鉄駅
 ========================= */
 
 const SUBWAY_STATIONS = [
@@ -145,7 +277,7 @@ const SUBWAY_STATIONS = [
 ]
 
 /* =========================
-西鉄駅
+   西鉄駅
 ========================= */
 
 const NISHITETSU_STATIONS = [
@@ -185,7 +317,7 @@ const NISHITETSU_STATIONS = [
 ]
 
 /* =========================
-エリア
+   エリア
 ========================= */
 
 const AREAS=[
@@ -195,7 +327,7 @@ const AREAS=[
 ]
 
 /* =========================
-区
+   区
 ========================= */
 
 const WARDS=[
@@ -210,7 +342,7 @@ const WARDS=[
 ]
 
 /* =========================
-市
+   市
 ========================= */
 
 const CITIES=[
@@ -219,7 +351,7 @@ const CITIES=[
 ]
 
 /* =========================
-カテゴリ
+   カテゴリ
 ========================= */
 
 const CATEGORIES=[
@@ -233,7 +365,7 @@ const CATEGORIES=[
 ]
 
 /* =========================
-タグ生成
+   タグ生成
 ========================= */
 
 function generateHashtags(title,desc){
@@ -302,12 +434,17 @@ return tags.slice(0,3)
 }
 
 /* =========================
-YouTube取得
+   YouTube取得
 ========================= */
 
 async function fetchVideos(){
 
-const API_KEY=prompt("YouTube API Key")
+const API_KEY = getApiKey()
+
+if(!API_KEY){
+  alert("APIキーが必要です。入力欄にAPIキーを入力して「保存」を押してください。")
+  return
+}
 
 const res=await fetch(
 `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet&order=date&maxResults=10`
@@ -315,10 +452,17 @@ const res=await fetch(
 
 const data=await res.json()
 
+if(data.error){
+  alert("APIエラー: " + data.error.message)
+  return
+}
+
 const container=document.getElementById("videoList")
 container.innerHTML=""
 
 data.items.forEach(v=>{
+
+if(!v.snippet) return
 
 const title=v.snippet.title
 const desc=v.snippet.description
@@ -349,7 +493,7 @@ ${tagText}
 ${text}
 </div>
 
-<button onclick="navigator.clipboard.writeText(\`${text}\`)">
+<button onclick="navigator.clipboard.writeText(\`${text.replace(/`/g,'\\`')}\`)">
 コピー
 </button>
 
