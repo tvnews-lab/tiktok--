@@ -569,20 +569,33 @@
     ===================================================== */
     async function summarizeWithAI(text, maxLen) {
       const apiKey = localStorage.getItem(GEMINI_KEY);
-      if (!apiKey) {
-        // Gemini API未設定の場合はフォールバック
-        const truncated = text.substring(0, maxLen);
+
+      // フォールバック関数：句点「。」で終わる完全な文を抽出
+      function fallbackSummarize(src, limit) {
+        const truncated = src.substring(0, limit);
+        // 「。」で終わる最後の完全な文を探す
+        const lastPeriod = truncated.lastIndexOf('。');
+        if (lastPeriod > 0) {
+          return truncated.substring(0, lastPeriod + 1);
+        }
+        // 「。」がない場合は、読点「、」で区切る
         const lastComma = truncated.lastIndexOf('、');
-        if (lastComma > maxLen * 0.4) {
+        if (lastComma > limit * 0.3) {
           return truncated.substring(0, lastComma) + '。';
         }
-        return truncated.substring(0, maxLen - 1) + '。';
+        // それもない場合は制限内で切って「。」を付ける
+        return truncated.substring(0, limit - 1) + '。';
+      }
+
+      if (!apiKey) {
+        return fallbackSummarize(text, maxLen);
       }
 
       try {
         const prompt = `以下のニュース原文を${maxLen}文字以内で要約してください。
 条件：
-- 必ず「。」で終わる自然な日本語の文にすること
+- 必ず「。」で終わる自然な日本語の完全な文にすること
+- 文が中途半端に途切れないこと
 - 要約文のみを出力すること（説明や前置きは不要）
 - 原文の重要な情報を保持すること
 - ${maxLen}文字を絶対に超えないこと
@@ -609,23 +622,12 @@
 
         // 万が一超過した場合のセーフティ
         if (summary.length > maxLen) {
-          const lastP = summary.substring(0, maxLen).lastIndexOf('。');
-          if (lastP > 0) {
-            summary = summary.substring(0, lastP + 1);
-          } else {
-            summary = summary.substring(0, maxLen - 1) + '。';
-          }
+          summary = fallbackSummarize(summary, maxLen);
         }
         return summary;
       } catch (e) {
         console.warn('Gemini API error:', e);
-        // エラー時フォールバック
-        const truncated = text.substring(0, maxLen);
-        const lastComma = truncated.lastIndexOf('、');
-        if (lastComma > maxLen * 0.4) {
-          return truncated.substring(0, lastComma) + '。';
-        }
-        return truncated.substring(0, maxLen - 1) + '。';
+        return fallbackSummarize(text, maxLen);
       }
     }
 
@@ -636,29 +638,37 @@
       const title = snippet.title;
       if (title.includes('#shorts')) return;
 
-      const desc = (snippet.description || "").replace(/\r?\n/g, '');
-      const MAX_LEN = 200;
+      const rawDesc = (snippet.description || "");
+      const desc = rawDesc.replace(/\r?\n/g, '');
+      const MAX_LEN = 100;
       let firstSentence = '';
 
       if (desc.trim()) {
-        // 末尾の不完全な記号を除去
-        let clean = desc.replace(/[.．…]+$/g, '').trim();
-        clean = clean.replace(/[、]+$/g, '').trim();
+        // ◆の後から#（ハッシュタグ）までの本文を抽出
+        let bodyText = desc;
+        const sepIdx = desc.indexOf('◆');
+        if (sepIdx >= 0) {
+          bodyText = desc.substring(sepIdx + 1);
+        }
+        // 先頭の#タグより前の部分を本文とする
+        const hashIdx = bodyText.indexOf('#');
+        const hashIdx2 = bodyText.indexOf('＃');
+        let endIdx = bodyText.length;
+        if (hashIdx >= 0) endIdx = Math.min(endIdx, hashIdx);
+        if (hashIdx2 >= 0) endIdx = Math.min(endIdx, hashIdx2);
+        bodyText = bodyText.substring(0, endIdx).trim();
 
-        if (clean) {
-          if (clean.length <= MAX_LEN) {
-            // 200文字以内：そのまま使用
-            firstSentence = clean.endsWith('。') ? clean : clean + '。';
+        // 末尾の不完全な記号を除去
+        bodyText = bodyText.replace(/[.．…]+$/g, '').trim();
+        bodyText = bodyText.replace(/[、]+$/g, '').trim();
+
+        if (bodyText) {
+          if (bodyText.length <= MAX_LEN) {
+            // 100文字以内：そのまま使用
+            firstSentence = bodyText.endsWith('。') ? bodyText : bodyText + '。';
           } else {
-            // 200文字超：先頭200文字内の最後の「。」で区切る
-            const truncated = clean.substring(0, MAX_LEN);
-            const lastPeriod = truncated.lastIndexOf('。');
-            if (lastPeriod > 0) {
-              firstSentence = truncated.substring(0, lastPeriod + 1);
-            } else {
-              // 「。」がない → Gemini APIで自動要約
-              firstSentence = await summarizeWithAI(clean, MAX_LEN);
-            }
+            // 100文字超：Gemini APIで自動要約を試行
+            firstSentence = await summarizeWithAI(bodyText, MAX_LEN);
           }
         }
       }
@@ -669,8 +679,10 @@
       const tagString = FIXED_TAGS.map(t => "#" + t).join(' ') + " " + autoTags.map(t => "#" + t.name).join(' ');
       const combined = cleanTitle + SEPARATOR + firstSentence + " " + tagString;
 
-      // AI生成された場合の表示ラベル
-      const aiLabel = (desc.trim() && desc.length > MAX_LEN && !desc.substring(0, MAX_LEN).includes('。'))
+      // AI要約が適用された場合の表示ラベル
+      const geminiKey = localStorage.getItem(GEMINI_KEY);
+      const wasAISummarized = firstSentence && desc.trim() && geminiKey;
+      const aiLabel = wasAISummarized
         ? '<span style="font-size:10px;color:var(--accent2);margin-left:8px;">🤖 AI要約</span>' : '';
 
       const card = document.createElement('div');
