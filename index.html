@@ -551,7 +551,7 @@
         if (channelData.error) throw new Error(channelData.error.message);
         const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
 
-        const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=10&key=${apiKey}`);
+        const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=20&key=${apiKey}`);
         const playlistData = await playlistRes.json();
 
         container.innerHTML = '';
